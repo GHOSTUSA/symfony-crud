@@ -4,37 +4,41 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Services\UserService;
 use App\Models\User;
-use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
+    protected $userService;
+
+    public function __construct(UserService $userService)
+    {
+        $this->userService = $userService;
+    }
+
     public function index()
     {
-        return response()->json(User::all());
+        return response()->json($this->userService->listUsers());
     }
 
     public function store(Request $request)
     {
         $request->validate([
             'name' => 'required|string',
+            'first_name' => 'required|string',
             'email' => 'required|email|unique:users',
+            'phone' => 'nullable|string',
             'password' => 'required|string|min:6',
         ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
+        $user = $this->userService->createUser($request->only(['name', 'first_name', 'email', 'phone', 'password']));
 
         return response()->json($user, 201);
     }
 
     public function show($id)
     {
-        $user = User::findOrFail($id);
-        return response()->json($user);
+        return response()->json($this->userService->getUser($id));
     }
 
     public function update(Request $request, $id)
@@ -43,23 +47,21 @@ class UserController extends Controller
 
         $request->validate([
             'name' => 'sometimes|string',
+            'first_name' => 'sometimes|string',
             'email' => 'sometimes|email|unique:users,email,' . $id,
+            'phone' => 'sometimes|string',
             'password' => 'sometimes|string|min:6',
         ]);
 
-        if ($request->has('name')) $user->name = $request->name;
-        if ($request->has('email')) $user->email = $request->email;
-        if ($request->has('password')) $user->password = Hash::make($request->password);
+        $updatedUser = $this->userService->updateUser($user, $request->only(['name', 'first_name', 'email', 'phone', 'password']));
 
-        $user->save();
-
-        return response()->json($user);
+        return response()->json($updatedUser);
     }
 
     public function destroy($id)
     {
         $user = User::findOrFail($id);
-        $user->delete();
+        $this->userService->deleteUser($user);
         return response()->json(null, 204);
     }
 }
