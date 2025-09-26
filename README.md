@@ -1,6 +1,6 @@
 # Laravel CRUD API Project
 
-Un pro## Structure du Projet
+Structure du Projet
 
 ```
 app/
@@ -36,7 +36,7 @@ app/
 ## Technologies Utilisées
 
 - Laravel 10
-- PHP 8.x
+- PHP 8.4
 - Docker & Docker Compose
 - Architecture Hexagonale
 - Nginx comme serveur web
