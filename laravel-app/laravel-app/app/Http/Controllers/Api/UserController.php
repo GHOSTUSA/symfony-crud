@@ -3,25 +3,40 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Application\DTOs\UserDTO;
+use App\Application\UseCases\CreateUserUseCase;
+use App\Application\UseCases\UpdateUserUseCase;
+use App\Application\UseCases\DeleteUserUseCase;
+use App\Application\UseCases\ListUsersUseCase;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use App\Service\UserService;
-use App\Models\User;
 
 class UserController extends Controller
 {
-    protected $userService;
+    public function __construct(
+        private CreateUserUseCase $createUserUseCase,
+        private UpdateUserUseCase $updateUserUseCase,
+        private DeleteUserUseCase $deleteUserUseCase,
+        private ListUsersUseCase $listUsersUseCase
+    ) {}
 
-    public function __construct(UserService $userService)
+    public function index(): JsonResponse
     {
-        $this->userService = $userService;
+        $users = $this->listUsersUseCase->execute();
+        $response = $users->map(function ($user) {
+            return [
+                'id' => $user->getId(),
+                'name' => $user->getName(),
+                'first_name' => $user->getFirstName(),
+                'email' => $user->getEmail()->getValue(),
+                'phone' => $user->getPhone(),
+                'role' => $user->getRole()->getValue()
+            ];
+        });
+        return response()->json($response);
     }
 
-    public function index()
-    {
-        return response()->json($this->userService->listUsers());
-    }
-
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
         $request->validate([
             'name' => 'required|string',
@@ -31,20 +46,21 @@ class UserController extends Controller
             'password' => 'required|string|min:6',
         ]);
 
-        $user = $this->userService->createUser($request->only(['name', 'first_name', 'email', 'phone', 'password']));
+        $userDTO = UserDTO::fromArray($request->all());
+        $user = $this->createUserUseCase->execute($userDTO);
 
-        return response()->json($user, 201);
+        return response()->json([
+            'id' => $user->getId(),
+            'name' => $user->getName(),
+            'first_name' => $user->getFirstName(),
+            'email' => $user->getEmail(),
+            'phone' => $user->getPhone(),
+            'role' => $user->getRole()
+        ], 201);
     }
 
-    public function show($id)
+    public function update(Request $request, int $id): JsonResponse
     {
-        return response()->json($this->userService->getUser($id));
-    }
-
-    public function update(Request $request, $id)
-    {
-        $user = User::findOrFail($id);
-
         $request->validate([
             'name' => 'sometimes|string',
             'first_name' => 'sometimes|string',
@@ -53,15 +69,22 @@ class UserController extends Controller
             'password' => 'sometimes|string|min:6',
         ]);
 
-        $updatedUser = $this->userService->updateUser($user, $request->only(['name', 'first_name', 'email', 'phone', 'password']));
+        $userDTO = UserDTO::fromArray($request->all());
+        $user = $this->updateUserUseCase->execute($id, $userDTO);
 
-        return response()->json($updatedUser);
+        return response()->json([
+            'id' => $user->getId(),
+            'name' => $user->getName(),
+            'first_name' => $user->getFirstName(),
+            'email' => $user->getEmail(),
+            'phone' => $user->getPhone(),
+            'role' => $user->getRole()
+        ]);
     }
 
-    public function destroy($id)
+    public function destroy(int $id): JsonResponse
     {
-        $user = User::findOrFail($id);
-        $this->userService->deleteUser($user);
+        $this->deleteUserUseCase->execute($id);
         return response()->json(null, 204);
     }
 }

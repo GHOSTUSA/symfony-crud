@@ -5,6 +5,8 @@ namespace App\Infrastructure\Persistence\Eloquent;
 use App\Domain\Entities\User as UserEntity;
 use App\Domain\Repositories\UserRepositoryInterface;
 use App\Infrastructure\Persistence\Eloquent\Models\User as UserModel;
+use App\Domain\ValueObjects\Email;
+use App\Domain\ValueObjects\UserRole;
 use Illuminate\Support\Collection;
 
 class UserRepository implements UserRepositoryInterface
@@ -28,10 +30,10 @@ class UserRepository implements UserRepositoryInterface
         $model->fill([
             'name' => $user->getName(),
             'first_name' => $user->getFirstName(),
-            'email' => $user->getEmail(),
+            'email' => $user->getEmail()->getValue(),
             'phone' => $user->getPhone(),
             'password' => $user->getPassword(),
-            'role' => $user->getRole()
+            'role' => $user->getRole()->getValue()
         ]);
         $model->save();
 
@@ -44,9 +46,9 @@ class UserRepository implements UserRepositoryInterface
         $model->update([
             'name' => $user->getName(),
             'first_name' => $user->getFirstName(),
-            'email' => $user->getEmail(),
+            'email' => $user->getEmail()->getValue(),
             'phone' => $user->getPhone(),
-            'role' => $user->getRole()
+            'role' => $user->getRole()->getValue()
         ]);
 
         return $this->toEntity($model);
@@ -60,11 +62,13 @@ class UserRepository implements UserRepositoryInterface
     private function toEntity(UserModel $model): UserEntity
     {
         return new UserEntity(
+            $model->id,
             $model->name,
             $model->first_name,
-            $model->email,
+            new Email($model->email),
             $model->phone,
-            $model->password
+            $model->password,
+            new UserRole($model->role)
         );
     }
 }

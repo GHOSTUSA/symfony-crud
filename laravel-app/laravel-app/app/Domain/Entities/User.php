@@ -2,40 +2,38 @@
 
 namespace App\Domain\Entities;
 
+use App\Domain\ValueObjects\Email;
+use App\Domain\ValueObjects\UserRole;
+
 class User
 {
-    private int $id;
+    private ?int $id = null;
     private string $name;
     private string $firstName;
-    private string $email;
+    private Email $email;
     private ?string $phone;
-    private string $role;
-    private string $password;
+    private UserRole $role;
+    private ?string $password;
 
     public function __construct(
+        ?int $id,
         string $name,
         string $firstName,
-        string $email,
+        Email $email,
         ?string $phone,
-        string $password
+        ?string $password,
+        ?UserRole $role = null
     ) {
+        $this->id = $id;
         $this->name = $name;
         $this->firstName = $firstName;
         $this->email = $email;
         $this->phone = $phone;
         $this->password = $password;
-        $this->setRole($email);
+        $this->role = $role ?? UserRole::fromEmail($email->getValue());
     }
 
-    private function setRole(string $email): void
-    {
-        $this->role = (strpos($email, '@company.com') !== false) 
-            ? 'Administrateur' 
-            : 'Utilisateur standard';
-    }
-
-    // Getters
-    public function getId(): int
+    public function getId(): ?int
     {
         return $this->id;
     }
@@ -50,7 +48,7 @@ class User
         return $this->firstName;
     }
 
-    public function getEmail(): string
+    public function getEmail(): Email
     {
         return $this->email;
     }
@@ -60,24 +58,23 @@ class User
         return $this->phone;
     }
 
-    public function getRole(): string
+    public function getRole(): UserRole
     {
         return $this->role;
     }
 
-    public function getPassword(): string
+    public function getPassword(): ?string
     {
         return $this->password;
     }
 
-    // Setters with domain logic
-    public function updateEmail(string $email): void
+    public function updateEmail(Email $email): void
     {
         $this->email = $email;
-        $this->setRole($email);
+        $this->role = UserRole::fromEmail($email->getValue());
     }
 
-    public function updatePassword(string $hashedPassword): void
+    public function updatePassword(?string $hashedPassword): void
     {
         $this->password = $hashedPassword;
     }
