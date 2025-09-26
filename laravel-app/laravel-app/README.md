@@ -29,7 +29,87 @@ You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you
 
 If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
 
-## Laravel Sponsors
+## CRUD API avec Architecture Hexagonale
+
+Cette application suit les principes de l'architecture hexagonale (aussi connue sous le nom de "Ports and Adapters") et du Domain-Driven Design (DDD).
+
+## Structure du Projet
+
+```
+app/
+├── Domain/                 # Couche domaine - règles métier et entités
+│   ├── Entities/          # Entités du domaine
+│   ├── ValueObjects/      # Objets valeur immutables
+│   └── Repositories/      # Interfaces des repositories (ports)
+│
+├── Application/           # Couche application - cas d'utilisation
+│   ├── DTOs/             # Objets de transfert de données
+│   ├── Factories/        # Factories pour la création d'entités
+│   └── UseCases/         # Cas d'utilisation de l'application
+│
+├── Infrastructure/        # Couche infrastructure - détails techniques
+│   └── Persistence/      # Implémentations des repositories
+│       └── Eloquent/     # Adaptateur Eloquent
+│
+└── Providers/            # Service providers Laravel
+```
+
+## Règles de Dépendances
+
+1. Domain
+   - ✅ Ne peut dépendre de RIEN d'autre
+   - ❌ Pas de références à l'ORM
+   - ❌ Pas de références aux frameworks
+   - ❌ Pas de références aux DTOs
+
+2. Application
+   - ✅ Peut dépendre du Domain
+   - ✅ Définit des interfaces (ports)
+   - ❌ Pas d'accès direct à la base de données
+   - ❌ Pas de références aux frameworks (sauf pour les interfaces)
+
+3. Infrastructure
+   - ✅ Peut dépendre du Domain et de Application
+   - ✅ Implémente les interfaces définies dans Application
+   - ✅ Contient les détails techniques (ORM, framework, etc.)
+
+4. Presentation (API)
+   - ✅ Utilise uniquement les cas d'utilisation
+   - ✅ Traduit les requêtes HTTP en appels de cas d'utilisation
+   - ❌ Pas de logique métier
+
+## Vérification des Dépendances
+
+Pour vérifier que ces règles sont respectées :
+
+1. Domain :
+   ```
+   grep -r "Illuminate\|Laravel" app/Domain/
+   ```
+   Ne devrait retourner AUCUN résultat
+
+2. Application :
+   ```
+   grep -r "Eloquent\|DB::" app/Application/
+   ```
+   Ne devrait retourner AUCUN résultat
+
+3. Interfaces :
+   ```
+   find app/Domain/Repositories/ -name "*.php"
+   ```
+   Chaque interface devrait avoir son implémentation dans Infrastructure
+
+## Tests
+
+Les tests sont organisés pour refléter la structure du code :
+
+```
+tests/
+├── Unit/
+│   ├── Domain/           # Tests des entités et value objects
+│   └── Application/      # Tests des cas d'utilisation
+└── Feature/             # Tests d'intégration Sponsors
 
 We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
 

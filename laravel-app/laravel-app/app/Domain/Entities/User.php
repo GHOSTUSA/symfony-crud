@@ -78,4 +78,19 @@ class User
     {
         $this->password = $hashedPassword;
     }
+
+    public function updateName(string $name): void
+    {
+        $this->name = $name;
+    }
+
+    public function updateFirstName(string $firstName): void
+    {
+        $this->firstName = $firstName;
+    }
+
+    public function updatePhone(?string $phone): void
+    {
+        $this->phone = $phone;
+    }
 }

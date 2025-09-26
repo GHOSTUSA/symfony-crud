@@ -5,19 +5,19 @@ namespace App\Application\DTOs;
 class UserDTO
 {
     public function __construct(
-        public readonly string $name,
-        public readonly string $firstName,
-        public readonly string $email,
-        public readonly ?string $phone,
+        public readonly ?string $name = null,
+        public readonly ?string $firstName = null,
+        public readonly ?string $email = null,
+        public readonly ?string $phone = null,
         public readonly ?string $password = null
     ) {}
 
     public static function fromArray(array $data): self
     {
         return new self(
-            $data['name'],
-            $data['first_name'],
-            $data['email'],
+            $data['name'] ?? null,
+            $data['first_name'] ?? null,
+            $data['email'] ?? null,
             $data['phone'] ?? null,
             $data['password'] ?? null
         );

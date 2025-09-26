@@ -33,4 +33,9 @@ class UserRole
     {
         return $this->value === self::ADMIN;
     }
+
+    public function equals(UserRole $other): bool
+    {
+        return $this->value === $other->value;
+    }
 }

@@ -1,0 +1,23 @@
+meta {
+  name: updateUsers
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:8080/api/users?name=bazaville&first_name=bazaville&email=bazavill@company.com&phone=0606060606&password=bazaville
+  body: none
+  auth: inherit
+}
+
+params:query {
+  name: bazaville
+  first_name: bazaville
+  email: bazavill@company.com
+  phone: 0606060606
+  password: bazaville
+}
+
+settings {
+  encodeUrl: true
+}

@@ -13,7 +13,7 @@ interface UserRepositoryInterface
 
     public function create(array $data): UserEntity;
 
-    public function update(UserEntity $user, array $data): UserEntity;
+    public function update(UserEntity $user): UserEntity;
     
     public function delete(UserEntity $user): void;
 }

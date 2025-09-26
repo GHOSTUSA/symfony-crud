@@ -47,21 +47,16 @@ class UserRepository implements UserRepositoryInterface
         return $this->toEntity($user);
     }
 
-    public function update(UserEntity $userEntity, array $data): UserEntity
+    public function update(UserEntity $userEntity): UserEntity
     {
         $user = User::findOrFail($userEntity->getId());
         $user->update([
-            'name' => $data['name'] ?? $user->name,
-            'first_name' => $data['firstName'] ?? $user->first_name,
-            'email' => $data['email'] ?? $user->email,
-            'phone' => $data['phone'] ?? $user->phone,
-            'role' => $data['role'] ?? $user->role
+            'name' => $userEntity->getName(),
+            'first_name' => $userEntity->getFirstName(),
+            'email' => $userEntity->getEmail()->getValue(),
+            'phone' => $userEntity->getPhone(),
+            'role' => $userEntity->getRole()->getValue()
         ]);
-
-        if (isset($data['password'])) {
-            $user->password = bcrypt($data['password']);
-            $user->save();
-        }
 
         return $this->toEntity($user);
     }

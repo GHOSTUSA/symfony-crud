@@ -23,12 +23,24 @@ class UpdateUserUseCase
             throw new \RuntimeException('User not found');
         }
 
-        if ($userDTO->email !== $user->getEmail()->getValue()) {
+        if ($userDTO->name !== null) {
+            $user->updateName($userDTO->name);
+        }
+
+        if ($userDTO->firstName !== null) {
+            $user->updateFirstName($userDTO->firstName);
+        }
+
+        if ($userDTO->email !== null && $userDTO->email !== $user->getEmail()->getValue()) {
             $email = $this->container->make(Email::class, ['email' => $userDTO->email]);
             $user->updateEmail($email);
         }
 
-        if ($userDTO->password) {
+        if ($userDTO->phone !== null) {
+            $user->updatePhone($userDTO->phone);
+        }
+
+        if ($userDTO->password !== null) {
             $user->updatePassword(Hash::make($userDTO->password));
         }
 
