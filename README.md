@@ -1,14 +1,95 @@
 # Laravel CRUD API Project
 
-Un projet d'API REST simple développé avec Laravel et conteneurisé avec Docker, permettant d'effectuer des opérations CRUD (Create, Read, Update, Delete) sur des utilisateurs.
+Un pro## Structure du Projet
 
-## Architecture du Projet
+```
+app/
+├── Domain/
+│   ├── Entities/
+│   │   └── User.php
+│   ├── Repositories/
+│   │   └── UserRepositoryInterface.php
+│   └── ValueObjects/
+├── Application/
+│   ├── DTOs/
+│   │   └── UserDTO.php
+│   └── UseCases/
+│       ├── CreateUserUseCase.php
+│       ├── UpdateUserUseCase.php
+│       ├── DeleteUserUseCase.php
+│       └── ListUsersUseCase.php
+├── Infrastructure/
+│   ├── Persistence/
+│   │   ├── Eloquent/
+│   │   │   ├── Models/
+│   │   │   │   └── User.php
+│   │   │   └── UserRepository.php
+│   │   └── External/
+│   └── Providers/
+│       └── RepositoryServiceProvider.php
+└── Presentation/
+    └── Http/
+        └── Controllers/
+            └── UserController.php
+```
 
-Le projet suit une architecture en couches avec :
-- Repository Pattern pour l'accès aux données
-- Service Layer pour la logique métier
-- Controllers pour gérer les requêtes HTTP
-- Interface pour assurer le découplage des composants
+## Technologies Utilisées
+
+- Laravel 10
+- PHP 8.x
+- Docker & Docker Compose
+- Architecture Hexagonale
+- Nginx comme serveur web
+- MySQL comme base de données
+
+## Configuration Docker
+
+Le projet utilise trois services Docker :
+1. **PHP** : Contient l'application Laravel avec architecture hexagonale
+2. **Nginx** : Serveur web qui gère les requêtes HTTP
+3. **MySQL** : Base de données relationnelle
+
+## Principes SOLID appliqués
+
+- **Single Responsibility** : Chaque classe a une seule responsabilité
+- **Open/Closed** : L'architecture permet l'extension sans modification
+- **Liskov Substitution** : Les interfaces garantissent la substitution
+- **Interface Segregation** : Les interfaces sont spécifiques et cohérentes
+- **Dependency Inversion** : Le Domain ne dépend d'aucune couche externe
+
+## Installationéveloppé avec Laravel suivant une architecture hexagonale (ports & adapters), conteneurisé avec Docker. Ce projet permet d'effectuer des opérations CRUD (Create, Read, Update, Delete) sur des utilisateurs.
+
+## Architecture Hexagonale
+
+Le projet est structuré en 5 couches distinctes suivant les principes de l'architecture hexagonale :
+
+### 1. Domain Layer (Cœur)
+- Entités métier pures
+- Règles métier (ex: assignation des rôles utilisateur)
+- Interfaces des repositories (ports)
+- Aucune dépendance externe
+
+### 2. Application Layer
+- Use Cases (cas d'utilisation)
+- DTOs (Data Transfer Objects)
+- Orchestration des opérations métier
+- Dépend uniquement du Domain
+
+### 3. Infrastructure Layer
+- Implémentation des repositories (adapters)
+- Modèles Eloquent
+- Persistence des données
+- Communication avec la base de données
+
+### 4. Presentation Layer
+- Contrôleurs API
+- Gestion des requêtes/réponses HTTP
+- Validation des entrées
+- Transformation des données
+
+### 5. External Layer
+- Intégrations avec services externes
+- Adaptateurs pour APIs tierces
 
 ## Technologies Utilisées
 
