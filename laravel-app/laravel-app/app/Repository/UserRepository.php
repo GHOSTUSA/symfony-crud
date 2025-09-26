@@ -2,35 +2,86 @@
 
 namespace App\Repository;
 
+use App\Domain\Entities\User as UserEntity;
 use App\Models\User;
 use App\Interface\UserRepositoryInterface;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Container\Container;
+use App\Application\Factories\UserFactory;
 
 class UserRepository implements UserRepositoryInterface
 {
-    public function all(): Collection
+    private $container;
+    private $factory;
+
+    public function __construct(Container $container)
     {
-        return User::all();
+        $this->container = $container;
+        $this->factory = $container->make('UserEntityFactory');
     }
 
-    public function find($id): User
+    public function all(): array
     {
-        return User::findOrFail($id);
+        return User::all()->map(function ($user) {
+            return $this->toEntity($user);
+        })->toArray();
     }
 
-    public function create(array $data): User
+    public function find($id): UserEntity
     {
-        return User::create($data);
+        $user = User::findOrFail($id);
+        return $this->toEntity($user);
     }
 
-    public function update(User $user, array $data): User
+    public function create(array $data): UserEntity
     {
-        $user->update($data);
-        return $user;
+        $user = User::create([
+            'name' => $data['name'],
+            'first_name' => $data['firstName'],
+            'email' => $data['email'],
+            'phone' => $data['phone'] ?? null,
+            'password' => isset($data['password']) ? bcrypt($data['password']) : null,
+            'role' => $data['role'] ?? 'user'
+        ]);
+
+        return $this->toEntity($user);
     }
 
-    public function delete(User $user): void
+    public function update(UserEntity $userEntity, array $data): UserEntity
     {
+        $user = User::findOrFail($userEntity->getId());
+        $user->update([
+            'name' => $data['name'] ?? $user->name,
+            'first_name' => $data['firstName'] ?? $user->first_name,
+            'email' => $data['email'] ?? $user->email,
+            'phone' => $data['phone'] ?? $user->phone,
+            'role' => $data['role'] ?? $user->role
+        ]);
+
+        if (isset($data['password'])) {
+            $user->password = bcrypt($data['password']);
+            $user->save();
+        }
+
+        return $this->toEntity($user);
+    }
+
+    public function delete(UserEntity $userEntity): void
+    {
+        $user = User::findOrFail($userEntity->getId());
         $user->delete();
+    }
+
+    private function toEntity(User $user): UserEntity
+    {
+        return $this->factory->create(
+            $user->id,
+            $user->name,
+            $user->first_name,
+            $user->email,
+            $user->phone,
+            null,
+            $user->role
+        );
     }
 }

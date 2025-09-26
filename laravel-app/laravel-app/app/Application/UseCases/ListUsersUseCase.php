@@ -8,7 +8,8 @@ use Illuminate\Support\Collection;
 class ListUsersUseCase
 {
     public function __construct(
-        private UserRepositoryInterface $userRepository
+        private UserRepositoryInterface $userRepository,
+        private \Illuminate\Contracts\Container\Container $container
     ) {}
 
     public function execute(): Collection

@@ -23,21 +23,40 @@ class AppServiceProvider extends ServiceProvider
             UserRepository::class
         );
 
+        // Bind Hasher Interface
+        $this->app->bind(
+            \Illuminate\Contracts\Hashing\Hasher::class,
+            \Illuminate\Hashing\BcryptHasher::class
+        );
+
         // Bind Use Cases
         $this->app->bind(CreateUserUseCase::class, function ($app) {
-            return new CreateUserUseCase($app->make(UserRepositoryInterface::class));
+            return new CreateUserUseCase(
+                $app->make(UserRepositoryInterface::class),
+                $app,
+                $app->make(\Illuminate\Contracts\Hashing\Hasher::class)
+            );
         });
 
         $this->app->bind(UpdateUserUseCase::class, function ($app) {
-            return new UpdateUserUseCase($app->make(UserRepositoryInterface::class));
+            return new UpdateUserUseCase(
+                $app->make(UserRepositoryInterface::class),
+                $app
+            );
         });
 
         $this->app->bind(DeleteUserUseCase::class, function ($app) {
-            return new DeleteUserUseCase($app->make(UserRepositoryInterface::class));
+            return new DeleteUserUseCase(
+                $app->make(UserRepositoryInterface::class),
+                $app
+            );
         });
 
         $this->app->bind(ListUsersUseCase::class, function ($app) {
-            return new ListUsersUseCase($app->make(UserRepositoryInterface::class));
+            return new ListUsersUseCase(
+                $app->make(UserRepositoryInterface::class),
+                $app
+            );
         });
     }
 

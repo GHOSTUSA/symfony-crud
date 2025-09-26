@@ -5,12 +5,14 @@ namespace App\Application\UseCases;
 use App\Domain\Repositories\UserRepositoryInterface;
 use App\Application\DTOs\UserDTO;
 use App\Domain\Entities\User;
+use App\Domain\ValueObjects\Email;
 use Illuminate\Support\Facades\Hash;
 
 class UpdateUserUseCase
 {
     public function __construct(
-        private UserRepositoryInterface $userRepository
+        private UserRepositoryInterface $userRepository,
+        private \Illuminate\Contracts\Container\Container $container
     ) {}
 
     public function execute(int $userId, UserDTO $userDTO): User
@@ -21,8 +23,9 @@ class UpdateUserUseCase
             throw new \RuntimeException('User not found');
         }
 
-        if ($userDTO->email !== $user->getEmail()) {
-            $user->updateEmail($userDTO->email);
+        if ($userDTO->email !== $user->getEmail()->getValue()) {
+            $email = $this->container->make(Email::class, ['email' => $userDTO->email]);
+            $user->updateEmail($email);
         }
 
         if ($userDTO->password) {

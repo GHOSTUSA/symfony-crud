@@ -5,24 +5,26 @@ namespace App\Application\UseCases;
 use App\Domain\Repositories\UserRepositoryInterface;
 use App\Application\DTOs\UserDTO;
 use App\Domain\Entities\User;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Contracts\Hashing\Hasher;
 
 class CreateUserUseCase
 {
     public function __construct(
-        private UserRepositoryInterface $userRepository
+        private UserRepositoryInterface $userRepository,
+        private \Illuminate\Contracts\Container\Container $container,
+        private Hasher $hasher
     ) {}
 
     public function execute(UserDTO $userDTO): User
     {
-        $user = new User(
-            null, // id is null for new users
+        $user = $this->container->make('UserEntityFactory')(
+            null,
             $userDTO->name,
             $userDTO->firstName,
-            new \App\Domain\ValueObjects\Email($userDTO->email),
+            $userDTO->email,
             $userDTO->phone,
-            Hash::make($userDTO->password),
-            null // role will be determined from email
+            $this->hasher->make($userDTO->password),
+            null
         );
 
         return $this->userRepository->save($user);

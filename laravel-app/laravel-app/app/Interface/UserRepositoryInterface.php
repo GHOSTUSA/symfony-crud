@@ -2,17 +2,18 @@
 
 namespace App\Interface;
 
-use App\Models\User;
+use App\Domain\Entities\User as UserEntity;
 
 interface UserRepositoryInterface 
 {
-    public function all();
+    /** @return UserEntity[] */
+    public function all(): array;
 
-    public function find($id);
+    public function find($id): UserEntity;
 
-    public function create(array $data);
+    public function create(array $data): UserEntity;
 
-    public function update(User $user, array $data);
+    public function update(UserEntity $user, array $data): UserEntity;
     
-    public function delete(User $user);
+    public function delete(UserEntity $user): void;
 }

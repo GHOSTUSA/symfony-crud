@@ -59,16 +59,20 @@ class UserRepository implements UserRepositoryInterface
         UserModel::findOrFail($user->getId())->delete();
     }
 
+    public function __construct(
+        private \Illuminate\Contracts\Container\Container $container
+    ) {}
+
     private function toEntity(UserModel $model): UserEntity
     {
-        return new UserEntity(
+        return $this->container->make('UserEntityFactory')(
             $model->id,
             $model->name,
             $model->first_name,
-            new Email($model->email),
+            $model->email,
             $model->phone,
             $model->password,
-            new UserRole($model->role)
+            $model->role
         );
     }
 }
