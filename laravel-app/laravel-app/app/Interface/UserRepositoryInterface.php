@@ -9,9 +9,9 @@ interface UserRepositoryInterface
     /** @return UserEntity[] */
     public function all(): array;
 
-    public function find($id): UserEntity;
+    public function findById(int $id): UserEntity;
 
-    public function create(array $data): UserEntity;
+    public function create(UserEntity $user): UserEntity;
 
     public function update(UserEntity $user): UserEntity;
     

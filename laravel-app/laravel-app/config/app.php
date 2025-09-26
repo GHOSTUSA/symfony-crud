@@ -38,6 +38,7 @@ return [
         App\Providers\AppServiceProvider::class,
         App\Providers\ContainerServiceProvider::class,
         App\Providers\DomainServiceProvider::class,
+        App\Providers\MediatorServiceProvider::class,
     ],
 
     /*

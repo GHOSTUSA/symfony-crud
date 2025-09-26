@@ -3,88 +3,78 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Application\DTOs\UserDTO;
-use App\Application\UseCases\CreateUserUseCase;
-use App\Application\UseCases\UpdateUserUseCase;
-use App\Application\UseCases\DeleteUserUseCase;
-use App\Application\UseCases\ListUsersUseCase;
+use App\Application\Common\Mediator\IMediator;
+use App\Application\Commands\CreateUser\CreateUserCommand;
+use App\Application\Commands\UpdateUser\UpdateUserCommand;
+use App\Application\Commands\DeleteUser\DeleteUserCommand;
+use App\Application\Queries\GetAllUsers\GetAllUsersQuery;
+use App\Application\Queries\GetUserById\GetUserByIdQuery;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class UserController extends Controller
 {
     public function __construct(
-        private CreateUserUseCase $createUserUseCase,
-        private UpdateUserUseCase $updateUserUseCase,
-        private DeleteUserUseCase $deleteUserUseCase,
-        private ListUsersUseCase $listUsersUseCase
+        private IMediator $mediator
     ) {}
 
     public function index(): JsonResponse
     {
-        $users = $this->listUsersUseCase->execute();
-        $response = $users->map(function ($user) {
-            return [
-                'id' => $user->getId(),
-                'name' => $user->getName(),
-                'first_name' => $user->getFirstName(),
-                'email' => $user->getEmail()->getValue(),
-                'phone' => $user->getPhone(),
-                'role' => $user->getRole()->getValue()
-            ];
-        });
-        return response()->json($response);
+    $users = $this->mediator->query(new GetAllUsersQuery());
+    $arrayUsers = array_map(function ($user) {
+        return $user->jsonSerialize();
+    }, $users);
+    return response()->json(collect($arrayUsers));
     }
 
     public function store(Request $request): JsonResponse
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string',
             'first_name' => 'required|string',
             'email' => 'required|email|unique:users',
-            'phone' => 'nullable|string',
-            'password' => 'required|string|min:6',
+            'phone' => 'required|string',
+            'password' => 'required|string|min:6'
         ]);
 
-        $userDTO = UserDTO::fromArray($request->all());
-        $user = $this->createUserUseCase->execute($userDTO);
+        $command = new CreateUserCommand(
+            $validated['name'],
+            $validated['first_name'],
+            $validated['email'],
+            $validated['phone'],
+            $validated['password']
+        );
 
-        return response()->json([
-            'id' => $user->getId(),
-            'name' => $user->getName(),
-            'first_name' => $user->getFirstName(),
-            'email' => $user->getEmail()->getValue(),
-            'phone' => $user->getPhone(),
-            'role' => $user->getRole()->getValue()
-        ], 201);
+        $user = $this->mediator->send($command);
+        return response()->json($user->jsonSerialize(), 201);
     }
 
     public function update(Request $request, int $id): JsonResponse
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'sometimes|string',
             'first_name' => 'sometimes|string',
             'email' => 'sometimes|email|unique:users,email,' . $id,
             'phone' => 'sometimes|string',
-            'password' => 'sometimes|string|min:6',
+            'password' => 'sometimes|string|min:6'
         ]);
 
-        $userDTO = UserDTO::fromArray($request->all());
-        $user = $this->updateUserUseCase->execute($id, $userDTO);
+        $command = new UpdateUserCommand(
+            $id,
+            $validated['name'] ?? null,
+            $validated['first_name'] ?? null,
+            $validated['email'] ?? null,
+            $validated['phone'] ?? null,
+            $validated['password'] ?? null
+        );
 
-        return response()->json([
-            'id' => $user->getId(),
-            'name' => $user->getName(),
-            'first_name' => $user->getFirstName(),
-            'email' => $user->getEmail()->getValue(),
-            'phone' => $user->getPhone(),
-            'role' => $user->getRole()->getValue()
-        ]);
+        $user = $this->mediator->send($command);
+        return response()->json($user->jsonSerialize());
     }
 
     public function destroy(int $id): JsonResponse
     {
-        $this->deleteUserUseCase->execute($id);
+        $this->mediator->send(new DeleteUserCommand($id));
         return response()->json(null, 204);
     }
 }

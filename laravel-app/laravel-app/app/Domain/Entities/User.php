@@ -93,4 +93,16 @@ class User
     {
         $this->phone = $phone;
     }
+
+        public function jsonSerialize(): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'first_name' => $this->firstName,
+            'email' => $this->email->getValue(),
+            'phone' => $this->phone,
+            'role' => $this->role->getValue(),
+        ];
+    }
 }

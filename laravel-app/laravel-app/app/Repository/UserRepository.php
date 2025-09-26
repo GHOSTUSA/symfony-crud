@@ -6,42 +6,40 @@ use App\Domain\Entities\User as UserEntity;
 use App\Models\User;
 use App\Interface\UserRepositoryInterface;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Container\Container;
 use App\Application\Factories\UserFactory;
 
 class UserRepository implements UserRepositoryInterface
 {
-    private $container;
     private $factory;
 
-    public function __construct(Container $container)
+    public function __construct(UserFactory $factory)
     {
-        $this->container = $container;
-        $this->factory = $container->make('UserEntityFactory');
+        $this->factory = $factory;
     }
 
     public function all(): array
     {
-        return User::all()->map(function ($user) {
+        $users = User::all();
+        return array_map(function ($user) {
             return $this->toEntity($user);
-        })->toArray();
+        }, $users->all());
     }
 
-    public function find($id): UserEntity
+    public function findById(int $id): UserEntity
     {
         $user = User::findOrFail($id);
         return $this->toEntity($user);
     }
 
-    public function create(array $data): UserEntity
+    public function create(UserEntity $userEntity): UserEntity
     {
         $user = User::create([
-            'name' => $data['name'],
-            'first_name' => $data['firstName'],
-            'email' => $data['email'],
-            'phone' => $data['phone'] ?? null,
-            'password' => isset($data['password']) ? bcrypt($data['password']) : null,
-            'role' => $data['role'] ?? 'user'
+            'name' => $userEntity->getName(),
+            'first_name' => $userEntity->getFirstName(),
+            'email' => $userEntity->getEmail()->getValue(),
+            'phone' => $userEntity->getPhone(),
+            'password' => $userEntity->getPassword() ? bcrypt($userEntity->getPassword()) : null,
+            'role' => $userEntity->getRole()->getValue()
         ]);
 
         return $this->toEntity($user);
