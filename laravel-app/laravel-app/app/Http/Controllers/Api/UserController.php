@@ -53,9 +53,9 @@ class UserController extends Controller
             'id' => $user->getId(),
             'name' => $user->getName(),
             'first_name' => $user->getFirstName(),
-            'email' => $user->getEmail(),
+            'email' => $user->getEmail()->getValue(),
             'phone' => $user->getPhone(),
-            'role' => $user->getRole()
+            'role' => $user->getRole()->getValue()
         ], 201);
     }
 
@@ -76,9 +76,9 @@ class UserController extends Controller
             'id' => $user->getId(),
             'name' => $user->getName(),
             'first_name' => $user->getFirstName(),
-            'email' => $user->getEmail(),
+            'email' => $user->getEmail()->getValue(),
             'phone' => $user->getPhone(),
-            'role' => $user->getRole()
+            'role' => $user->getRole()->getValue()
         ]);
     }
 

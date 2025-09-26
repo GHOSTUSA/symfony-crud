@@ -16,11 +16,13 @@ class CreateUserUseCase
     public function execute(UserDTO $userDTO): User
     {
         $user = new User(
+            null, // id is null for new users
             $userDTO->name,
             $userDTO->firstName,
-            $userDTO->email,
+            new \App\Domain\ValueObjects\Email($userDTO->email),
             $userDTO->phone,
-            Hash::make($userDTO->password)
+            Hash::make($userDTO->password),
+            null // role will be determined from email
         );
 
         return $this->userRepository->save($user);
