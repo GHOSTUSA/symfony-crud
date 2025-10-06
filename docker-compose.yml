@@ -14,8 +14,13 @@ services:
       - DB_USERNAME=laravel
       - DB_PASSWORD=laravel
       - SERVICE_NAME=user-service
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=admin
+      - RABBITMQ_PASSWORD=admin123
     depends_on:
       - user-db
+      - rabbitmq
     networks:
       - microservices
 
@@ -61,8 +66,13 @@ services:
       - DB_USERNAME=laravel
       - DB_PASSWORD=laravel
       - SERVICE_NAME=account-service
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=admin
+      - RABBITMQ_PASSWORD=admin123
     depends_on:
       - account-db
+      - rabbitmq
     networks:
       - microservices
 
@@ -95,6 +105,27 @@ services:
     networks:
       - microservices
 
+  # RabbitMQ Message Broker
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: rabbitmq
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
+    ports:
+      - "5672:5672"     # AMQP port
+      - "15672:15672"   # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - microservices
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
 networks:
   microservices:
     driver: bridge
@@ -102,3 +133,4 @@ networks:
 volumes:
   user_dbdata:
   account_dbdata:
+  rabbitmq_data:

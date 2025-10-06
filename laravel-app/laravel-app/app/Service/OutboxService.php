@@ -3,12 +3,19 @@
 namespace App\Service;
 
 use App\Models\OutboxEvent;
-use Illuminate\Support\Facades\Http;
+use App\Service\RabbitMQService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 
 class OutboxService
 {
+    protected RabbitMQService $rabbitMQService;
+
+    public function __construct(RabbitMQService $rabbitMQService)
+    {
+        $this->rabbitMQService = $rabbitMQService;
+    }
+
     /**
      * Créer un nouvel événement dans l'Outbox
      */
@@ -42,7 +49,7 @@ class OutboxService
     }
 
     /**
-     * Traiter un événement spécifique
+     * Traiter un événement spécifique avec RabbitMQ
      */
     public function processEvent(OutboxEvent $event): void
     {
@@ -57,11 +64,11 @@ class OutboxService
 
             switch ($event->event_type) {
                 case OutboxEvent::EVENT_CREATE_ACCOUNT:
-                    $success = $this->sendCreateAccountRequest($event);
+                    $success = $this->sendCreateAccountCommand($event);
                     break;
                 
                 case OutboxEvent::EVENT_DELETE_ACCOUNT:
-                    $success = $this->sendDeleteAccountRequest($event);
+                    $success = $this->sendDeleteAccountCommand($event);
                     break;
                 
                 default:
@@ -75,13 +82,13 @@ class OutboxService
                     'status' => OutboxEvent::STATUS_SENT,
                     'sent_at' => now()
                 ]);
-                Log::info('Event processed successfully', ['event_id' => $event->event_id]);
+                Log::info('Event processed successfully via RabbitMQ', ['event_id' => $event->event_id]);
             } else {
                 $this->handleEventFailure($event);
             }
 
         } catch (\Exception $e) {
-            Log::error('Failed to process event', [
+            Log::error('Failed to process event via RabbitMQ', [
                 'event_id' => $event->event_id,
                 'error' => $e->getMessage()
             ]);
@@ -90,97 +97,33 @@ class OutboxService
     }
 
     /**
-     * Envoyer une requête de création de compte
+     * Envoyer une commande de création de compte via RabbitMQ
      */
-    private function sendCreateAccountRequest(OutboxEvent $event): bool
+    private function sendCreateAccountCommand(OutboxEvent $event): bool
     {
         try {
-            $response = Http::timeout(30)->post('http://account-nginx/api/accounts', [
+            $commandData = [
+                'command_type' => 'create_account',
+                'saga_id' => $event->saga_id,
                 'user_id' => $event->payload['user_id'],
                 'account_type' => $event->payload['account_type'] ?? 'checking',
                 'balance' => $event->payload['balance'] ?? 0.00,
                 'status' => $event->payload['status'] ?? 'active',
-                'saga_id' => $event->saga_id // Importante pour traçabilité
-            ]);
+                'timestamp' => now()->toISOString()
+            ];
 
-            if ($response->successful()) {
-                // Récupérer les données du compte créé
-                $accountData = $response->json();
-                
-                // Notifier l'orchestrateur du succès
-                $this->notifyOrchestrator($event->saga_id, 'account_created', $accountData);
-                
-                return true;
-            } else {
-                Log::error('Account creation failed', [
-                    'saga_id' => $event->saga_id,
-                    'status' => $response->status(),
-                    'response' => $response->body()
-                ]);
-
-                // Notifier l'orchestrateur de l'échec
-                $this->notifyOrchestrator($event->saga_id, 'account_creation_failed', [
-                    'error' => 'HTTP ' . $response->status() . ': ' . $response->body()
-                ]);
-
-                return false;
-            }
-
-        } catch (\Exception $e) {
-            Log::error('Exception during account creation', [
-                'saga_id' => $event->saga_id,
-                'error' => $e->getMessage()
-            ]);
-
-            $this->notifyOrchestrator($event->saga_id, 'account_creation_failed', [
-                'error' => $e->getMessage()
-            ]);
-
-            return false;
-        }
-    }
-
-    /**
-     * Envoyer une requête de suppression de compte
-     */
-    private function sendDeleteAccountRequest(OutboxEvent $event): bool
-    {
-        try {
-            $userId = $event->payload['user_id'];
+            $this->rabbitMQService->publishCreateAccountCommand($commandData);
             
-            $response = Http::timeout(30)->delete("http://account-nginx/api/accounts/user/{$userId}", [
-                'saga_id' => $event->saga_id
+            Log::info('Create account command sent via RabbitMQ', [
+                'saga_id' => $event->saga_id,
+                'user_id' => $event->payload['user_id']
             ]);
 
-            if ($response->successful()) {
-                // Notifier l'orchestrateur du succès
-                $this->notifyOrchestrator($event->saga_id, 'account_deleted', [
-                    'user_id' => $userId
-                ]);
-                
-                return true;
-            } else {
-                Log::error('Account deletion failed', [
-                    'saga_id' => $event->saga_id,
-                    'user_id' => $userId,
-                    'status' => $response->status(),
-                    'response' => $response->body()
-                ]);
-
-                $this->notifyOrchestrator($event->saga_id, 'account_deletion_failed', [
-                    'error' => 'HTTP ' . $response->status() . ': ' . $response->body()
-                ]);
-
-                return false;
-            }
+            return true;
 
         } catch (\Exception $e) {
-            Log::error('Exception during account deletion', [
+            Log::error('Failed to send create account command via RabbitMQ', [
                 'saga_id' => $event->saga_id,
-                'error' => $e->getMessage()
-            ]);
-
-            $this->notifyOrchestrator($event->saga_id, 'account_deletion_failed', [
                 'error' => $e->getMessage()
             ]);
 
@@ -189,38 +132,34 @@ class OutboxService
     }
 
     /**
-     * Notifier l'orchestrateur d'un événement
+     * Envoyer une commande de suppression de compte via RabbitMQ
      */
-    private function notifyOrchestrator(string $sagaId, string $eventType, array $data): void
+    private function sendDeleteAccountCommand(OutboxEvent $event): bool
     {
         try {
-            // Dans une vraie implémentation, ceci pourrait être un message queue
-            // Pour notre POC, nous appelons directement l'orchestrateur via le container
-            $orchestrator = app()->make(SagaOrchestrator::class);
+            $commandData = [
+                'command_type' => 'delete_account',
+                'saga_id' => $event->saga_id,
+                'user_id' => $event->payload['user_id'],
+                'timestamp' => now()->toISOString()
+            ];
 
-            switch ($eventType) {
-                case 'account_created':
-                    $orchestrator->handleAccountCreated($sagaId, $data);
-                    break;
-                
-                case 'account_creation_failed':
-                    $orchestrator->handleAccountCreationFailed($sagaId, $data['error']);
-                    break;
-                
-                case 'account_deleted':
-                    $orchestrator->handleAccountDeleted($sagaId);
-                    break;
-                
-                default:
-                    Log::warning('Unknown orchestrator event type', ['event_type' => $eventType]);
-            }
+            $this->rabbitMQService->publishDeleteAccountCommand($commandData);
+            
+            Log::info('Delete account command sent via RabbitMQ', [
+                'saga_id' => $event->saga_id,
+                'user_id' => $event->payload['user_id']
+            ]);
+
+            return true;
 
         } catch (\Exception $e) {
-            Log::error('Failed to notify orchestrator', [
-                'saga_id' => $sagaId,
-                'event_type' => $eventType,
+            Log::error('Failed to send delete account command via RabbitMQ', [
+                'saga_id' => $event->saga_id,
                 'error' => $e->getMessage()
             ]);
+
+            return false;
         }
     }
 
