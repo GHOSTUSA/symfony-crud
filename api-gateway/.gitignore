@@ -1,0 +1,30 @@
+# API Gateway - GitIgnore
+
+# Dépendances Composer
+/vendor/
+
+# Logs
+*.log
+logs/
+storage/logs/
+
+# Cache
+cache/
+*.cache
+
+# Variables d'environnement
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/

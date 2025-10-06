@@ -175,6 +175,35 @@ services:
     command: ["php", "artisan", "account:consume-commands"]
     restart: unless-stopped
 
+  # API Gateway pour l'agrégation de données
+  api-gateway:
+    build:
+      context: ./docker/php
+    container_name: api_gateway
+    volumes:
+      - ./api-gateway:/var/www/html
+    environment:
+      - USER_SERVICE_URL=http://user-nginx:80
+      - ACCOUNT_SERVICE_URL=http://account-nginx:80
+    depends_on:
+      - user-service
+      - account-service
+    networks:
+      - microservices
+
+  api-gateway-nginx:
+    image: nginx:alpine
+    container_name: api_gateway_nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./api-gateway:/var/www/html
+      - ./docker/nginx/gateway-nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - api-gateway
+    networks:
+      - microservices
+
 networks:
   microservices:
     driver: bridge

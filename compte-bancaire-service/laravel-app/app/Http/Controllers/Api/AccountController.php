@@ -20,19 +20,31 @@ class AccountController extends Controller
     /**
      * Display a listing of accounts
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         try {
-            $accounts = $this->accountService->getAllAccounts();
+            $userId = $request->query('user_id');
+            
+            if ($userId) {
+                // Filtrer par utilisateur spécifique
+                $accounts = $this->accountService->getAccountsByUserId((int)$userId);
+                $message = "Accounts retrieved successfully for user {$userId}";
+            } else {
+                // Récupérer tous les comptes
+                $accounts = $this->accountService->getAllAccounts();
+                $message = 'All accounts retrieved successfully';
+            }
+
             return response()->json([
                 'success' => true,
                 'data' => $accounts,
-                'message' => 'Accounts retrieved successfully'
+                'total' => count($accounts),
+                'message' => $message
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error retrieving accounts: ' . $e->getMessage()
+                'message' => 'Failed to retrieve accounts: ' . $e->getMessage()
             ], 500);
         }
     }
