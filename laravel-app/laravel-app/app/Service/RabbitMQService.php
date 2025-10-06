@@ -232,9 +232,9 @@ class RabbitMQService
             }
         );
 
-        // Démarrer la consommation
-        while ($this->channel->is_consuming()) {
-            $this->channel->wait();
+        // Démarrer la consommation avec timeout
+        while (count($this->channel->callbacks)) {
+            $this->channel->wait(null, false, 1);
         }
     }
 
