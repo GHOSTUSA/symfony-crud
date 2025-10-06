@@ -1,41 +1,104 @@
 version: "3.8"
 
 services:
-  app:
+  # Microservice Utilisateur
+  user-service:
     build:
       context: ./docker/php
-    container_name: laravel_app
+    container_name: user_service
     volumes:
       - ./laravel-app/laravel-app:/var/www/html
-
+    environment:
+      - DB_HOST=user-db
+      - DB_DATABASE=user_service
+      - DB_USERNAME=laravel
+      - DB_PASSWORD=laravel
+      - SERVICE_NAME=user-service
     depends_on:
-      - db
+      - user-db
+    networks:
+      - microservices
 
-  nginx:
+  user-nginx:
     image: nginx:alpine
-    container_name: laravel_nginx
+    container_name: user_nginx
     ports:
-      - "8080:80"
+      - "8082:80"
     volumes:
       - ./laravel-app/laravel-app:/var/www/html
-      - ./docker/nginx/nginx.conf:/etc/nginx/conf.d/default.conf
-
+      - ./docker/nginx/user-nginx.conf:/etc/nginx/conf.d/default.conf
     depends_on:
-      - app
+      - user-service
+    networks:
+      - microservices
 
-  db:
+  user-db:
     image: mysql:8
-    container_name: laravel_db
+    container_name: user_db
     restart: always
     environment:
-      MYSQL_DATABASE: laravel
+      MYSQL_DATABASE: user_service
       MYSQL_ROOT_PASSWORD: root
       MYSQL_USER: laravel
       MYSQL_PASSWORD: laravel
     ports:
-      - "3306:3306"
+      - "3308:3306"
     volumes:
-      - dbdata:/var/lib/mysql
+      - user_dbdata:/var/lib/mysql
+    networks:
+      - microservices
+
+  # Microservice CompteBancaire
+  account-service:
+    build:
+      context: ./docker/php
+    container_name: account_service
+    volumes:
+      - ./compte-bancaire-service/laravel-app:/var/www/html
+    environment:
+      - DB_HOST=account-db
+      - DB_DATABASE=account_service
+      - DB_USERNAME=laravel
+      - DB_PASSWORD=laravel
+      - SERVICE_NAME=account-service
+    depends_on:
+      - account-db
+    networks:
+      - microservices
+
+  account-nginx:
+    image: nginx:alpine
+    container_name: account_nginx
+    ports:
+      - "8081:80"
+    volumes:
+      - ./compte-bancaire-service/laravel-app:/var/www/html
+      - ./docker/nginx/account-nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - account-service
+    networks:
+      - microservices
+
+  account-db:
+    image: mysql:8
+    container_name: account_db
+    restart: always
+    environment:
+      MYSQL_DATABASE: account_service
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: laravel
+      MYSQL_PASSWORD: laravel
+    ports:
+      - "3307:3306"
+    volumes:
+      - account_dbdata:/var/lib/mysql
+    networks:
+      - microservices
+
+networks:
+  microservices:
+    driver: bridge
 
 volumes:
-  dbdata:
+  user_dbdata:
+  account_dbdata:

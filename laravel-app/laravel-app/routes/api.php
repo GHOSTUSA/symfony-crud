@@ -10,3 +10,12 @@ Route::put('/users/{id}', [UserController::class, 'update']);
 Route::patch('/users/{id}', [UserController::class, 'update']);
 Route::delete('/users/{id}', [UserController::class, 'destroy']);
 
+// Health check
+Route::get('/health', function () {
+    return response()->json([
+        'status' => 'OK',
+        'service' => 'user-service',
+        'timestamp' => now()
+    ]);
+});
+
